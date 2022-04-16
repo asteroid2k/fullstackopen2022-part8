@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@apollo/client";
 import { useState } from "react";
 import { ALL_AUTHORS, UPDATE_AUTHOR } from "../api/queries";
 
-const AddBirthYear = () => {
+const AddBirthYear = ({ notify }) => {
   const [updateAuthor] = useMutation(UPDATE_AUTHOR);
   const { data: authors } = useQuery(ALL_AUTHORS);
   const [name, setName] = useState("");
@@ -13,10 +13,20 @@ const AddBirthYear = () => {
     updateAuthor({
       variables: { name, setBornTo: Number(born) },
       refetchQueries: [ALL_AUTHORS],
+      onCompleted,
+      onError: () => console.log("Could not update author"),
     });
     setBorn("");
     setName("");
   };
+  const onCompleted = (data) => {
+    if (data && data.editAuthor === null) {
+      notify("Author not found");
+      return;
+    }
+    notify(`${name} updated`);
+  };
+
   return (
     <div>
       <form onSubmit={handleSubmit}>
@@ -34,6 +44,7 @@ const AddBirthYear = () => {
         <div>
           <label htmlFor="born">Born</label>
           <input
+            required
             type="number"
             id="born"
             onChange={(e) => setBorn(e.target.value)}
@@ -45,10 +56,10 @@ const AddBirthYear = () => {
   );
 };
 
-const Authors = (props) => {
+const Authors = ({ show, notify }) => {
   const { loading, error, data } = useQuery(ALL_AUTHORS);
 
-  if (!props.show) {
+  if (!show) {
     return null;
   }
 
@@ -78,7 +89,7 @@ const Authors = (props) => {
         </table>
       )}
       <br />
-      <AddBirthYear />
+      <AddBirthYear notify={notify} />
     </div>
   );
 };

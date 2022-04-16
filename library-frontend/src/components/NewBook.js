@@ -2,16 +2,16 @@ import { useMutation } from "@apollo/client";
 import { useState } from "react";
 import { ADD_BOOK, ALL_AUTHORS, ALL_BOOKS } from "../api/queries";
 
-const NewBook = (props) => {
+const NewBook = ({ show, notify }) => {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [published, setPublished] = useState("");
   const [genre, setGenre] = useState("");
   const [genres, setGenres] = useState([]);
 
-  const [addBook, { loading, error }] = useMutation(ADD_BOOK);
+  const [addBook] = useMutation(ADD_BOOK);
 
-  if (!props.show) {
+  if (!show) {
     return null;
   }
 
@@ -19,8 +19,10 @@ const NewBook = (props) => {
     event.preventDefault();
 
     addBook({
-      variables: { title, author, published: String(published), genres },
+      variables: { title, author, published: Number(published), genres },
       refetchQueries: [ALL_BOOKS, ALL_AUTHORS],
+      onCompleted: () => notify(`Book added: '${title}'`),
+      onError: () => notify("Could not add book"),
     });
 
     setTitle("");
@@ -41,6 +43,7 @@ const NewBook = (props) => {
         <div>
           title
           <input
+            required
             value={title}
             onChange={({ target }) => setTitle(target.value)}
           />
@@ -48,6 +51,7 @@ const NewBook = (props) => {
         <div>
           author
           <input
+            required
             value={author}
             onChange={({ target }) => setAuthor(target.value)}
           />
@@ -55,6 +59,7 @@ const NewBook = (props) => {
         <div>
           published
           <input
+            required
             type="number"
             value={published}
             onChange={({ target }) => setPublished(target.value)}
@@ -71,7 +76,6 @@ const NewBook = (props) => {
         </div>
         <div>genres: {genres.join(" ")}</div>
         <button type="submit">create book</button>
-        {loading && <p>Adding book...</p>}
       </form>
     </div>
   );
