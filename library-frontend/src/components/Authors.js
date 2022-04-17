@@ -3,7 +3,17 @@ import { useState } from "react";
 import { ALL_AUTHORS, UPDATE_AUTHOR } from "../api/queries";
 
 const AddBirthYear = ({ notify }) => {
-  const [updateAuthor] = useMutation(UPDATE_AUTHOR);
+  const [updateAuthor] = useMutation(UPDATE_AUTHOR, {
+    update: (cache, response) => {
+      cache.updateQuery({ query: ALL_AUTHORS }, ({ allAuthors }) => {
+        return {
+          allAuthors: allAuthors.map((a) =>
+            a.id !== response.data.editAuthor.id ? a : response.data.editAuthor
+          ),
+        };
+      });
+    },
+  });
   const { data: authors } = useQuery(ALL_AUTHORS);
   const [name, setName] = useState("");
   const [born, setBorn] = useState("");
@@ -12,7 +22,6 @@ const AddBirthYear = ({ notify }) => {
     e.preventDefault();
     updateAuthor({
       variables: { name, setBornTo: Number(born) },
-      refetchQueries: [ALL_AUTHORS],
       onCompleted,
       onError: () => console.log("Could not update author"),
     });
@@ -56,8 +65,8 @@ const AddBirthYear = ({ notify }) => {
   );
 };
 
-const Authors = ({ show, notify }) => {
-  const { loading, error, data } = useQuery(ALL_AUTHORS);
+const Authors = ({ show, notify, token }) => {
+  const { loading, data } = useQuery(ALL_AUTHORS);
 
   if (!show) {
     return null;
@@ -89,7 +98,7 @@ const Authors = ({ show, notify }) => {
         </table>
       )}
       <br />
-      <AddBirthYear notify={notify} />
+      {token && <AddBirthYear notify={notify} />}
     </div>
   );
 };

@@ -9,7 +9,13 @@ const NewBook = ({ show, notify }) => {
   const [genre, setGenre] = useState("");
   const [genres, setGenres] = useState([]);
 
-  const [addBook] = useMutation(ADD_BOOK);
+  const [addBook] = useMutation(ADD_BOOK, {
+    update: (cache, response) => {
+      cache.updateQuery({ query: ALL_BOOKS }, ({ allBooks }) => {
+        return { allBooks: allBooks.concat(response.data.addBook) };
+      });
+    },
+  });
 
   if (!show) {
     return null;
@@ -20,9 +26,12 @@ const NewBook = ({ show, notify }) => {
 
     addBook({
       variables: { title, author, published: Number(published), genres },
-      refetchQueries: [ALL_BOOKS, ALL_AUTHORS],
+
       onCompleted: () => notify(`Book added: '${title}'`),
-      onError: () => notify("Could not add book"),
+      onError: ({ graphQLErrors }) =>
+        notify(
+          (graphQLErrors[0] && graphQLErrors[0].message) || "Could not add book"
+        ),
     });
 
     setTitle("");
@@ -74,7 +83,7 @@ const NewBook = ({ show, notify }) => {
             add genre
           </button>
         </div>
-        <div>genres: {genres.join(" ")}</div>
+        <div>genres: {genres.join(", ")}</div>
         <button type="submit">create book</button>
       </form>
     </div>
