@@ -1,12 +1,17 @@
-import { useApolloClient, useLazyQuery, useQuery } from "@apollo/client";
+import {
+  useApolloClient,
+  useLazyQuery,
+  useQuery,
+  useSubscription,
+} from "@apollo/client";
 import { useEffect, useState } from "react";
-import { ALL_BOOKS, GET_USER } from "./api/queries";
+import { ALL_BOOKS, BOOK_ADDED, GET_USER } from "./api/queries";
 import Authors from "./components/Authors";
 import Books from "./components/Books";
 import Login from "./components/Login";
 import NewBook from "./components/NewBook";
 import Recommended from "./components/Recommended";
-import { getFromLocal } from "./util";
+import { getFromLocal, updateCache } from "./util";
 
 const App = () => {
   const [page, setPage] = useState("authors");
@@ -18,6 +23,14 @@ const App = () => {
   const client = useApolloClient();
   const { data } = useQuery(ALL_BOOKS);
   const [getUser] = useLazyQuery(GET_USER);
+
+  useSubscription(BOOK_ADDED, {
+    onSubscriptionData: ({ subscriptionData, client }) => {
+      const addedBook = subscriptionData.data.bookAdded;
+      notify(`NEW BOOK ADDED '${addedBook.title}'`);
+      updateCache(client.cache, { query: ALL_BOOKS }, addedBook);
+    },
+  });
 
   useEffect(() => {
     const tkn = getFromLocal("library-token");
@@ -59,6 +72,7 @@ const App = () => {
     setToken(null);
     localStorage.clear();
     client.resetStore();
+    setPage("authors");
   };
 
   return (
@@ -70,8 +84,11 @@ const App = () => {
         {token && (
           <button onClick={() => setPage("recommended")}>recommended</button>
         )}
-        {!token && <button onClick={() => setPage("login")}>login</button>}
-        {token && <button onClick={logout}>logout</button>}
+        {!token ? (
+          <button onClick={() => setPage("login")}>login</button>
+        ) : (
+          <button onClick={logout}>logout</button>
+        )}
       </div>
       {alert && <p>{alert}</p>}
       <br />

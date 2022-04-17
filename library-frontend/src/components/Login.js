@@ -27,6 +27,8 @@ const Login = ({ setToken, notify, show, setPage }) => {
           (graphQLErrors[0] && graphQLErrors[0].message) || "Could not signin"
         ),
     });
+    setUsername("");
+    setPassword("");
   };
 
   return (
